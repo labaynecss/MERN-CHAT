@@ -41,7 +41,6 @@ mongoose
   });
 
 //Routes end-point
-
 app.get('/profile', (req, res) => {
   const token = req.cookies?.token;
   if (token) {
