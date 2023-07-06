@@ -138,16 +138,28 @@ wss.on("connection", (connection, req) => {
       }
     }
   }
+  connection.on("message", (message) => {
+    messageData = JSON.parse(message.toString());
+    const { recipient, text } = messageData;
+
+    if (recipient && text) {
+      [...wss.clients]
+        .filter((client) => client.userId === recipient)
+        .forEach((client) =>
+          client.send(JSON.stringify({ text, sender: connection.userId }))
+        );
+    }
+  });
 
   // console.log([...wss.clients].map((client) => client.username));
   [...wss.clients].forEach((client) => {
     client.send(
-      JSON.stringify(
-        [...wss.clients].map((client) => ({
+      JSON.stringify({
+        online: [...wss.clients].map((client) => ({
           userId: client.userId,
           username: client.username,
-        }))
-      )
+        })),
+      })
     );
   });
 });
