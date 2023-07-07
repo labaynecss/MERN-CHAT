@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const User = require("./models/User");
+const Message = require("./models/Message");
 const app = express();
 
 //
@@ -138,15 +139,27 @@ wss.on("connection", (connection, req) => {
       }
     }
   }
-  connection.on("message", (message) => {
-    messageData = JSON.parse(message.toString());
+  connection.on("message", async (message) => {
+    const messageData = JSON.parse(message.toString());
     const { recipient, text } = messageData;
 
     if (recipient && text) {
+      const messageDoc = await Message.create({
+        sender: connection.userId,
+        recipient,
+        text,
+      });
+
       [...wss.clients]
         .filter((client) => client.userId === recipient)
         .forEach((client) =>
-          client.send(JSON.stringify({ text, sender: connection.userId }))
+          client.send(
+            JSON.stringify({
+              text,
+              sender: connection.userId,
+              id: messageDoc._id,
+            })
+          )
         );
     }
   });
