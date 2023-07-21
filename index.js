@@ -1,13 +1,13 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
-const ws = require('ws');
-const cookieParser = require('cookie-parser');
-const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const User = require('./models/User');
-const Message = require('./models/Message');
+const express = require("express");
+const dotenv = require("dotenv");
+const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
+const ws = require("ws");
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
+const bcrypt = require("bcryptjs");
+const User = require("./models/User");
+const Message = require("./models/Message");
 const app = express();
 
 //
@@ -23,7 +23,7 @@ app.use(
   cors({
     credentials: true,
     origin: process.env.CLIENT_URL,
-  }),
+  })
 );
 
 jwtSecret = process.env.JWT_SECRET;
@@ -35,10 +35,10 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => {
-    console.log('Connected to MongoDB');
+    console.log("Connected to MongoDB");
   })
   .catch((err) => {
-    console.error('Error connecting to MongoDB:', err);
+    console.error("Error connecting to MongoDB:", err);
   });
 
 //Routes end-point
@@ -52,16 +52,16 @@ async function getUserDataFromRequest(req) {
         resolve(userData);
       });
     } else {
-      reject('no token');
+      reject("no token");
     }
   });
 }
 
-app.post('/logout', (req, res) => {
-  res.cookie('token', '', { sameSite: 'none', secure: true }).json('ok');
+app.post("/logout", (req, res) => {
+  res.cookie("token", "", { sameSite: "none", secure: true }).json("ok");
 });
 
-app.get('/messages/:userId', async (req, res) => {
+app.get("/messages/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
     const userData = await getUserDataFromRequest(req);
@@ -74,16 +74,16 @@ app.get('/messages/:userId', async (req, res) => {
 
     res.json(messages);
   } catch (error) {
-    res.status(500).json({ error: 'Error fetching messages' });
+    res.status(500).json({ error: "Error fetching messages" });
   }
 });
 
-app.get('/people', async (req, res) => {
+app.get("/people", async (req, res) => {
   const users = await User.find({}, { _id: 1, username: 1 });
   res.json(users);
 });
 
-app.get('/profile', (req, res) => {
+app.get("/profile", (req, res) => {
   const token = req.cookies?.token;
   if (token) {
     jwt.verify(token, jwtSecret, {}, (err, userData) => {
@@ -91,11 +91,11 @@ app.get('/profile', (req, res) => {
       res.json(userData);
     });
   } else {
-    res.status(401).json('no token');
+    res.status(401).json("no token");
   }
 });
 
-app.post('/login', async (req, res) => {
+app.post("/login", async (req, res) => {
   const { username, password } = req.body;
   const foundUser = await User.findOne({ username });
   if (foundUser) {
@@ -108,18 +108,18 @@ app.post('/login', async (req, res) => {
         (err, token) => {
           if (err) throw err;
           res
-            .cookie('token', token, { sameSite: 'none', secure: true })
+            .cookie("token", token, { sameSite: "none", secure: true })
             .status(201)
             .json({
               id: verify._id,
             });
-        },
+        }
       );
     }
   }
 });
 
-app.post('/register', async (req, res) => {
+app.post("/register", async (req, res) => {
   const { username, password } = req.body;
   try {
     const hashedPassword = bcrypt.hashSync(password, bcryptSalt);
@@ -134,21 +134,21 @@ app.post('/register', async (req, res) => {
       (err, token) => {
         if (err) throw err;
         res
-          .cookie('token', token, { sameSite: 'none', secure: true })
+          .cookie("token", token, { sameSite: "none", secure: true })
           .status(201)
           .json({
             id: createdUser._id,
           });
-      },
+      }
     );
   } catch (err) {
     if (err) throw err;
-    res.status(500).json('An error occurred during registration');
+    res.status(500).json("An error occurred during registration");
   }
 });
 
 // Port Server && WebSocket
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.json(`Server is runnning `);
 });
 
@@ -158,7 +158,7 @@ const server = app.listen(port, () => {
 
 const wss = new ws.WebSocketServer({ server });
 
-wss.on('connection', (connection, req) => {
+wss.on("connection", (connection, req) => {
   function notifyAboutOnlinePeople() {
     [...wss.clients].forEach((client) => {
       client.send(
@@ -167,7 +167,7 @@ wss.on('connection', (connection, req) => {
             userId: client.userId,
             username: client.username,
           })),
-        }),
+        })
       );
     });
   }
@@ -183,22 +183,22 @@ wss.on('connection', (connection, req) => {
       clearInterval(connection.timer);
       connection.terminate();
       notifyAboutOnlinePeople();
-      console.log('dead');
+      console.log("dead");
     }, 1000);
   }, 5000);
 
-  connection.on('pong', () => {
+  connection.on("pong", () => {
     clearTimeout(connection.deathTimer);
   });
 
   // console.log(req.headers);
   if (cookies) {
     const tokenCookieString = cookies
-      .split(';')
-      .find((str) => str.startsWith('token='));
+      .split(";")
+      .find((str) => str.startsWith("token="));
 
     if (tokenCookieString) {
-      const token = tokenCookieString.split('=')[1];
+      const token = tokenCookieString.split("=")[1];
 
       if (token) {
         jwt.verify(token, jwtSecret, {}, (err, userData) => {
@@ -210,7 +210,7 @@ wss.on('connection', (connection, req) => {
       }
     }
   }
-  connection.on('message', async (message) => {
+  connection.on("message", async (message) => {
     const messageData = JSON.parse(message.toString());
     const { recipient, text } = messageData;
 
@@ -230,8 +230,8 @@ wss.on('connection', (connection, req) => {
               sender: connection.userId,
               recipient,
               _id: messageDoc._id,
-            }),
-          ),
+            })
+          )
         );
     }
   });
